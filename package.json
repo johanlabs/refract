@@ -1,0 +1,11 @@
+{
+  "name": "@johanlabs/refract",
+  "version": "1.0.0",
+  "bin": {
+    "refract": "./refract.js"
+  },
+  "dependencies": {
+    "glob": "^11.0.3",
+    "yargs": "^18.0.0"
+  }
+}
