@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -7,7 +5,6 @@ const glob = require('glob');
 const yargs = require('yargs');
 const { hideBin } = require('yargs/helpers');
 
-// 🎨 Cores para o terminal
 const colors = {
   reset: '\x1b[0m',
   gray: '\x1b[90m',
@@ -22,13 +19,11 @@ const log = (msg, color = 'reset') => {
   console.log(`${colors[color]}${msg}${colors.reset}`);
 };
 
-// 🧮 Calcula hash de conteúdo para cache
 const hashFile = (filePath) => {
   const content = fs.readFileSync(filePath, 'utf-8');
   return crypto.createHash('sha256').update(content).digest('hex');
 };
 
-// 🧠 Lê e parseia blocos model, enum, type, view
 const parsePrismaSchema = (content, source) => {
   const schemaParts = {};
   const blockRegex = /(model|enum|type|view)\s+(\w+)\s*\{([\s\S]*?)\}/g;
@@ -48,7 +43,6 @@ const parsePrismaSchema = (content, source) => {
   return schemaParts;
 };
 
-// 🧩 Faz merge de schemas, campo a campo se possível
 const mergeSchemas = (baseSchema, newSchema) => {
   for (const [key, newBlock] of Object.entries(newSchema)) {
     if (!baseSchema[key]) {
@@ -66,7 +60,6 @@ const mergeSchemas = (baseSchema, newSchema) => {
   return baseSchema;
 };
 
-// 🧾 Transforma schema em string formatada
 const schemaToString = (schema) => {
   return Object.values(schema)
     .map(({ kind, name, body, source }) => {
@@ -81,12 +74,10 @@ const schemaToString = (schema) => {
     .join('\n\n');
 };
 
-// 🧰 Remove blocos datasource e generator
 const removeDataSourceAndGenerator = (content) => {
   return content.replace(/(datasource|generator)\s+\w+\s+\{[\s\S]*?\}/g, '');
 };
 
-// 📊 Mostra estatísticas
 const showStats = (schema) => {
   const stats = { model: 0, enum: 0, type: 0, view: 0 };
   Object.values(schema).forEach(({ kind }) => {
@@ -99,7 +90,6 @@ const showStats = (schema) => {
   });
 };
 
-// ⚡ Gera schema final
 const createSchemas = (options) => {
   const cwd = path.resolve(process.cwd());
   const fragmentsDir = path.resolve(cwd, options.fragments);
@@ -118,7 +108,6 @@ const createSchemas = (options) => {
       throw new Error(`Directory "${options.fragments}" not found.`);
     }
 
-    // 🔹 Normaliza os paths para glob (Windows friendly)
     const fragmentPattern = path.join(fragmentsDir, '*.prisma').replace(/\\/g, '/');
     const packagePattern = path.join(packagesDir, '**/*.prisma').replace(/\\/g, '/');
 
@@ -132,7 +121,6 @@ const createSchemas = (options) => {
       throw new Error('No .prisma files found');
     }
 
-    // 🧩 Calcula hash total pra cache
     const allFiles = [...fragmentFiles, ...schemaFiles];
     const combinedHash = allFiles.map(hashFile).join('');
     const finalHash = crypto.createHash('sha256').update(combinedHash).digest('hex');
@@ -149,7 +137,6 @@ const createSchemas = (options) => {
     log('\n🔨 Merging schemas...', 'cyan');
     let finalSchema = {};
 
-    // 🧱 Fragments (podem ter generator/datasource)
     fragmentFiles.forEach((file) => {
       const content = fs.readFileSync(file, 'utf-8');
       const relative = path.relative(cwd, file);
@@ -157,7 +144,6 @@ const createSchemas = (options) => {
       finalSchema = mergeSchemas(finalSchema, parsed);
     });
 
-    // 📦 Schemas nos pacotes (sem datasource/generator)
     schemaFiles.forEach((file) => {
       const content = fs.readFileSync(file, 'utf-8');
       const cleaned = removeDataSourceAndGenerator(content);
@@ -166,14 +152,12 @@ const createSchemas = (options) => {
       finalSchema = mergeSchemas(finalSchema, parsed);
     });
 
-    // 🧩 Base schema com generator/datasource
     const baseSchemaPath = path.join(fragmentsDir, 'schema.prisma');
     let baseSchemaContent = '';
     if (fs.existsSync(baseSchemaPath)) {
       baseSchemaContent = fs.readFileSync(baseSchemaPath, 'utf-8').trim();
     }
 
-    // 🧾 Gera string final
     const finalContent = `${baseSchemaContent}\n\n${schemaToString(finalSchema)}\n`;
 
     if (!fs.existsSync(outputDir)) {
@@ -192,7 +176,6 @@ const createSchemas = (options) => {
   }
 };
 
-// 🎯 CLI com yargs
 const argv = yargs(hideBin(process.argv))
   .scriptName('refract')
   .usage('$0 [options]')
